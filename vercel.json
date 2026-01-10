@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/:slug",
+      "destination": "/survey.html"
+    },
+    {
+      "source": "/:slug/",
+      "destination": "/survey.html"
+    }
+  ]
+}

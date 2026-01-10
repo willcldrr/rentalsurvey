@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Loading...</title>
+  <meta name="description" content="Get pricing on exotic car rentals">
+  <style>
+    :root {
+      --primary-color: #375DEE;
+      --bg-color: #000000;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      background: var(--bg-color);
+      color: #ffffff;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    .survey-container {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Loading State */
+    .loading-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    .loading-screen p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    /* Error State */
+    .error-screen {
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .error-screen.active {
+      display: flex;
+    }
+
+    .error-screen h1 {
+      font-size: 72px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.1);
+      margin-bottom: 16px;
+    }
+
+    .error-screen h2 {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .error-screen p {
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 32px;
+    }
+
+    .error-screen a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .error-screen a:hover {
+      text-decoration: underline;
+    }
+
+    /* Header with logo */
+    .survey-header {
+      padding: 20px 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .survey-header.active {
+      display: block;
+    }
+
+    .survey-logo {
+      max-height: 40px;
+      max-width: 180px;
+      object-fit: contain;
+    }
+
+    .survey-business-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+      display: none;
+    }
+
+    .progress-bar.active {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary-color);
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .step-counter {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
+      z-index: 100;
+      display: none;
+    }
+
+    .step-counter.active {
+      display: block;
+    }
+
+    .question-container {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      padding: 20px 16px 24px;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .question-container.active {
+      display: flex;
+    }
+
+    .question-slide {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .question-slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .question-label {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      line-height: 1.3;
+    }
+
+    /* Car selection - horizontal scroll on mobile */
+    .car-grid {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 8px 4px 24px;
+      margin: 0 -16px;
+      padding-left: 16px;
+      padding-right: 16px;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+
+    .car-grid::-webkit-scrollbar {
+      display: none;
+    }
+
+    .car-option {
+      flex: 0 0 280px;
+      height: 320px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      scroll-snap-align: center;
+    }
+
+    .car-option:active {
+      transform: scale(0.98);
+    }
+
+    .car-option:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .car-option.selected {
+      background: rgba(55, 93, 238, 0.15);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 30px rgba(55, 93, 238, 0.3);
+    }
+
+    .car-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .car-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .car-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .car-price {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .scroll-hint {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .loading-cars {
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 16px;
+    }
+
+    /* Calendar styles */
+    .calendar-container {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .calendar-nav {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calendar-nav:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .calendar-month {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .calendar-weekday {
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      padding: 8px 0;
+    }
+
+    .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      color: #fff;
+      transition: all 0.15s ease;
+    }
+
+    .calendar-day:not(.empty):not(.disabled):not(.booked):active {
+      transform: scale(0.9);
+    }
+
+    .calendar-day.empty {
+      cursor: default;
+    }
+
+    .calendar-day.disabled {
+      color: rgba(255, 255, 255, 0.2);
+      cursor: not-allowed;
+    }
+
+    .calendar-day.booked {
+      background: rgba(239, 68, 68, 0.3);
+      color: rgba(255, 255, 255, 0.4);
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    .calendar-day.today {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .calendar-day.selected {
+      background: var(--primary-color);
+      color: #fff;
+    }
+
+    .calendar-day.in-range {
+      background: rgba(55, 93, 238, 0.3);
+      border-radius: 0;
+    }
+
+    .calendar-day.range-start {
+      border-radius: 10px 0 0 10px;
+    }
+
+    .calendar-day.range-end {
+      border-radius: 0 10px 10px 0;
+    }
+
+    .calendar-day.range-start.range-end {
+      border-radius: 10px;
+    }
+
+    .selected-dates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      min-height: 36px;
+    }
+
+    .date-chip {
+      background: rgba(55, 93, 238, 0.2);
+      border: 1px solid var(--primary-color);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-chip-remove {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .date-hint {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* Text inputs */
+    .input-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 16px 0;
+      font-size: 28px;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .text-input::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    .text-input:focus {
+      border-bottom-color: var(--primary-color);
+    }
+
+    .text-input[type="number"]::-webkit-inner-spin-button,
+    .text-input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .text-input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* Navigation */
+    .nav-container {
+      display: flex;
+      gap: 12px;
+      padding: 16px 0;
+      margin-top: auto;
+    }
+
+    .nav-btn {
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 56px;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.98);
+    }
+
+    .nav-btn.back {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      padding: 16px 20px;
+    }
+
+    .nav-btn.next {
+      background: var(--primary-color);
+      border: none;
+      color: #ffffff;
+      flex: 1;
+    }
+
+    .nav-btn.next:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .nav-btn .arrow {
+      font-size: 18px;
+    }
+
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .nav-btn.loading .spinner {
+      display: inline-block;
+    }
+
+    .nav-btn.loading .btn-text {
+      display: none;
+    }
+
+    .error-message {
+      color: #f87171;
+      font-size: 14px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    /* Success screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .success-screen.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .success-icon {
+      width: 88px;
+      height: 88px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      animation: scaleIn 0.4s ease;
+    }
+
+    .success-icon svg {
+      width: 44px;
+      height: 44px;
+      stroke: #ffffff;
+    }
+
+    @keyframes scaleIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .success-screen h2 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .success-screen p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 16px;
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Larger screens */
+    @media (min-width: 480px) {
+      .question-container {
+        padding: 40px 24px 32px;
+      }
+
+      .question-label {
+        font-size: 32px;
+        margin-bottom: 32px;
+      }
+
+      .car-option {
+        flex: 0 0 320px;
+        height: 360px;
+      }
+
+      .car-image {
+        height: 260px;
+      }
+
+      .car-name {
+        font-size: 20px;
+      }
+
+      .text-input {
+        font-size: 36px;
+      }
+
+      .calendar-container {
+        padding: 20px;
+      }
+    }
+
+    @media (min-width: 700px) {
+      .car-grid {
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow-x: visible;
+        margin: 0;
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+
+      .car-option {
+        flex: 0 0 calc(50% - 12px);
+        max-width: 280px;
+        height: 300px;
+      }
+
+      .car-image {
+        height: 200px;
+      }
+
+      .scroll-hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="survey-container">
+    <!-- Loading State -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-screen" id="errorScreen">
+      <h1>404</h1>
+      <h2>Survey Not Found</h2>
+      <p>This survey doesn't exist or has been removed.</p>
+      <a href="https://scalexotics.com">Go to Scale Exotics →</a>
+    </div>
+
+    <!-- Survey Header -->
+    <div class="survey-header" id="surveyHeader">
+      <img class="survey-logo" id="surveyLogo" src="" alt="" style="display: none;">
+      <div class="survey-business-name" id="businessName"></div>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="step-counter" id="stepCounter">1 / 5</div>
+
+    <div class="question-container" id="questionContainer">
+      <!-- Steps will be dynamically generated -->
+    </div>
+
+    <!-- Success Screen -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      </div>
+      <h2 id="successTitle">You're on the list!</h2>
+      <p id="successSubtitle">We'll text you within a few minutes with available cars and pricing.</p>
+    </div>
+  </div>
+
+  <script>
+    // ============ CONFIGURATION ============
+    const API_BASE = 'https://scalexotics.com';
+    const API_KEY = 'sk_QIkla1NJu1kx4xF0W6wfoe6IW690KzqI';
+    // =======================================
+
+    // State
+    let config = null;
+    let vehicles = [];
+    let bookedDates = new Set();
+    let currentStep = 0;
+    let totalSteps = 0;
+    let steps = [];
+    let formData = {
+      vehicle_id: null,
+      vehicle_name: null,
+      start_date: null,
+      end_date: null,
+      age: null,
+      name: null,
+      email: null,
+      phone: null
+    };
+    let currentMonth = new Date();
+
+    const DEFAULT_CAR_IMAGE = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&h=400&fit=crop&auto=format&q=80';
+
+    // DOM Elements
+    const loadingScreen = document.getElementById('loadingScreen');
+    const errorScreen = document.getElementById('errorScreen');
+    const surveyHeader = document.getElementById('surveyHeader');
+    const progressBar = document.getElementById('progressBar');
+    const stepCounter = document.getElementById('stepCounter');
+    const questionContainer = document.getElementById('questionContainer');
+    const successScreen = document.getElementById('successScreen');
+
+    // Initialize
+    init();
+
+    async function init() {
+      const slug = getSlugFromPath();
+
+      if (!slug) {
+        showError();
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/survey-config/${slug}`, {
+          headers: { 'X-API-Key': API_KEY }
+        });
+
+        if (!response.ok) {
+          throw new Error('Survey not found');
+        }
+
+        const data = await response.json();
+        config = data.config;
+        vehicles = data.vehicles || [];
+
+        // Process availability
+        if (data.availability) {
+          data.availability.forEach(booking => {
+            const start = new Date(booking.start_date);
+            const end = new Date(booking.end_date);
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+              bookedDates.add(d.toISOString().split('T')[0]);
+            }
+          });
+        }
+
+        applyBranding();
+        buildSteps();
+        renderCurrentStep();
+        showSurvey();
+      } catch (error) {
+        console.error('Failed to load survey:', error);
+        showError();
+      }
+    }
+
+    function getSlugFromPath() {
+      const path = window.location.pathname;
+      const parts = path.split('/').filter(p => p);
+      return parts[0] || null;
+    }
+
+    function showError() {
+      loadingScreen.style.display = 'none';
+      errorScreen.classList.add('active');
+    }
+
+    function showSurvey() {
+      loadingScreen.style.display = 'none';
+      surveyHeader.classList.add('active');
+      progressBar.classList.add('active');
+      stepCounter.classList.add('active');
+      questionContainer.classList.add('active');
+    }
+
+    function applyBranding() {
+      // Set CSS variables
+      if (config.primary_color) {
+        document.documentElement.style.setProperty('--primary-color', config.primary_color);
+      }
+      if (config.background_color) {
+        document.documentElement.style.setProperty('--bg-color', config.background_color);
+        document.body.style.background = config.background_color;
+      }
+
+      // Set title
+      document.title = config.business_name || 'Survey';
+
+      // Set logo or business name
+      const logoEl = document.getElementById('surveyLogo');
+      const nameEl = document.getElementById('businessName');
+
+      if (config.logo_url) {
+        logoEl.src = config.logo_url;
+        logoEl.alt = config.business_name;
+        logoEl.style.display = 'block';
+        nameEl.style.display = 'none';
+      } else {
+        logoEl.style.display = 'none';
+        nameEl.textContent = config.business_name || '';
+        nameEl.style.display = 'block';
+      }
+
+      // Set success messages
+      if (config.success_title) {
+        document.getElementById('successTitle').textContent = config.success_title;
+      }
+      if (config.success_subtitle) {
+        document.getElementById('successSubtitle').textContent = config.success_subtitle;
+      }
+    }
+
+    function buildSteps() {
+      steps = [];
+      const fields = config.fields || {};
+
+      // Vehicle selection (if enabled and vehicles exist)
+      if (fields.vehicle && vehicles.length > 0) {
+        steps.push({ type: 'vehicle', label: config.welcome_title || 'Which car interests you?' });
+      }
+
+      // Dates
+      if (fields.dates) {
+        steps.push({ type: 'dates', label: 'When do you need it?' });
+      }
+
+      // Age
+      if (fields.age) {
+        steps.push({ type: 'age', label: 'How old are you?' });
+      }
+
+      // Phone
+      if (fields.phone) {
+        steps.push({ type: 'phone', label: 'Your phone number?' });
+      }
+
+      // Email
+      if (fields.email) {
+        steps.push({ type: 'email', label: 'Your email address?', required: config.require_email });
+      }
+
+      // Name
+      if (fields.name) {
+        steps.push({ type: 'name', label: "What's your name?" });
+      }
+
+      totalSteps = steps.length;
+      currentStep = 0;
+    }
+
+    function renderCurrentStep() {
+      if (currentStep >= steps.length) return;
+
+      const step = steps[currentStep];
+      questionContainer.innerHTML = '';
+
+      const slideEl = document.createElement('div');
+      slideEl.className = 'question-slide active';
+      slideEl.dataset.step = currentStep;
+
+      let content = `<h2 class="question-label">${step.label}</h2>`;
+
+      switch (step.type) {
+        case 'vehicle':
+          content += renderVehicleStep();
+          break;
+        case 'dates':
+          content += renderDatesStep();
+          break;
+        case 'age':
+          content += renderInputStep('age', 'number', '25', 'numeric');
+          break;
+        case 'phone':
+          content += renderInputStep('phone', 'tel', '(555) 123-4567', 'tel');
+          break;
+        case 'email':
+          content += renderInputStep('email', 'email', 'you@example.com', 'email');
+          break;
+        case 'name':
+          content += renderInputStep('name', 'text', 'Your name', 'text');
+          break;
+      }
+
+      slideEl.innerHTML = content;
+      questionContainer.appendChild(slideEl);
+
+      // Setup event listeners after rendering
+      setupStepListeners(step.type);
+      updateProgress();
+    }
+
+    function renderVehicleStep() {
+      let html = '<div class="car-grid" id="carGrid">';
+
+      vehicles.forEach(vehicle => {
+        const imageUrl = vehicle.image_url || DEFAULT_CAR_IMAGE;
+        const displayName = vehicle.name || `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+        const price = vehicle.daily_rate ? `$${vehicle.daily_rate.toLocaleString()}/day` : '';
+
+        html += `
+          <button type="button" class="car-option" data-id="${vehicle.id}" data-name="${displayName}">
+            <img class="car-image" src="${imageUrl}" alt="${displayName}" loading="lazy" onerror="this.src='${DEFAULT_CAR_IMAGE}'">
+            <div class="car-info">
+              <span class="car-name">${displayName}</span>
+              ${price ? `<span class="car-price">${price}</span>` : ''}
+            </div>
+          </button>
+        `;
+      });
+
+      html += '</div>';
+      html += '<p class="scroll-hint">Swipe to see more →</p>';
+      html += '<div class="error-message" id="stepError">Please select a vehicle</div>';
+
+      return html;
+    }
+
+    function renderDatesStep() {
+      return `
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <button type="button" class="calendar-nav" id="prevMonth">←</button>
+            <span class="calendar-month" id="calendarMonth"></span>
+            <button type="button" class="calendar-nav" id="nextMonth">→</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span class="calendar-weekday">Su</span>
+            <span class="calendar-weekday">Mo</span>
+            <span class="calendar-weekday">Tu</span>
+            <span class="calendar-weekday">We</span>
+            <span class="calendar-weekday">Th</span>
+            <span class="calendar-weekday">Fr</span>
+            <span class="calendar-weekday">Sa</span>
+          </div>
+          <div class="calendar-days" id="calendarDays"></div>
+          <div class="selected-dates" id="selectedDates"></div>
+          <p class="date-hint">Tap to select start date, tap again for end date</p>
+        </div>
+        <div class="error-message" id="stepError">Please select your rental date(s)</div>
+        ${renderNavButtons()}
+      `;
+    }
+
+    function renderInputStep(field, type, placeholder, inputmode) {
+      const isLastStep = currentStep === steps.length - 1;
+      return `
+        <div class="input-container">
+          <input type="${type}" class="text-input" id="${field}Input" placeholder="${placeholder}" inputmode="${inputmode}" autocomplete="off">
+        </div>
+        <div class="error-message" id="stepError"></div>
+        ${renderNavButtons(isLastStep)}
+      `;
+    }
+
+    function renderNavButtons(isSubmit = false) {
+      const showBack = currentStep > 0;
+      return `
+        <div class="nav-container">
+          ${showBack ? `
+            <button type="button" class="nav-btn back" onclick="prevStep()">
+              <span class="arrow">←</span>
+            </button>
+          ` : ''}
+          <button type="button" class="nav-btn next" id="nextBtn" onclick="${isSubmit ? 'submitSurvey()' : 'nextStep()'}">
+            <span class="spinner"></span>
+            <span class="btn-text">${isSubmit ? 'Get My Quote' : 'Continue'}</span>
+          </button>
+        </div>
+      `;
+    }
+
+    function setupStepListeners(type) {
+      switch (type) {
+        case 'vehicle':
+          document.querySelectorAll('.car-option').forEach(btn => {
+            btn.addEventListener('click', function() {
+              document.querySelectorAll('.car-option').forEach(b => b.classList.remove('selected'));
+              this.classList.add('selected');
+              formData.vehicle_id = this.dataset.id;
+              formData.vehicle_name = this.dataset.name;
+              hideError();
+
+              // Load availability for selected vehicle
+              loadVehicleAvailability(formData.vehicle_id);
+
+              setTimeout(() => nextStep(), 250);
+            });
+          });
+          break;
+
+        case 'dates':
+          document.getElementById('prevMonth').addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            renderCalendar();
+          });
+          document.getElementById('nextMonth').addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            renderCalendar();
+          });
+          renderCalendar();
+          break;
+
+        case 'phone':
+          const phoneInput = document.getElementById('phoneInput');
+          phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) value = value.slice(0, 10);
+            if (value.length >= 6) {
+              value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+            } else if (value.length >= 3) {
+              value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+            } else if (value.length > 0) {
+              value = `(${value}`;
+            }
+            e.target.value = value;
+          });
+          phoneInput.focus();
+          setupEnterKey(phoneInput);
+          break;
+
+        case 'age':
+        case 'email':
+        case 'name':
+          const input = document.querySelector('.text-input');
+          if (input) {
+            input.focus();
+            setupEnterKey(input);
+          }
+          break;
+      }
+    }
+
+    function setupEnterKey(input) {
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (currentStep === steps.length - 1) {
+            submitSurvey();
+          } else {
+            nextStep();
+          }
+        }
+      });
+    }
+
+    async function loadVehicleAvailability(vehicleId) {
+      // Availability is already loaded from initial config
+      // This function can be extended if you need to fetch per-vehicle availability
+    }
+
+    function isDateBooked(date) {
+      const dateStr = date.toISOString().split('T')[0];
+      return bookedDates.has(dateStr);
+    }
+
+    function renderCalendar() {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
+      document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const calendarDays = document.getElementById('calendarDays');
+      calendarDays.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day empty';
+        calendarDays.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateBtn = document.createElement('button');
+        dateBtn.type = 'button';
+        dateBtn.className = 'calendar-day';
+        dateBtn.textContent = day;
+
+        const date = new Date(year, month, day);
+        date.setHours(0, 0, 0, 0);
+
+        const isPast = date < today;
+        const isBooked = isDateBooked(date);
+
+        if (isPast) {
+          dateBtn.classList.add('disabled');
+        } else if (isBooked) {
+          dateBtn.classList.add('booked');
+        } else {
+          dateBtn.addEventListener('click', () => handleDateClick(date));
+        }
+
+        if (date.getTime() === today.getTime()) {
+          dateBtn.classList.add('today');
+        }
+
+        // Highlight selected dates
+        if (formData.start_date && formData.end_date) {
+          const start = new Date(formData.start_date).setHours(0,0,0,0);
+          const end = new Date(formData.end_date).setHours(0,0,0,0);
+          const current = date.getTime();
+
+          if (current === start) dateBtn.classList.add('selected', 'range-start');
+          if (current === end) dateBtn.classList.add('selected', 'range-end');
+          if (current > start && current < end) dateBtn.classList.add('in-range');
+        } else if (formData.start_date) {
+          const start = new Date(formData.start_date).setHours(0,0,0,0);
+          if (date.getTime() === start) {
+            dateBtn.classList.add('selected', 'range-start', 'range-end');
+          }
+        }
+
+        calendarDays.appendChild(dateBtn);
+      }
+
+      updateSelectedDatesDisplay();
+    }
+
+    function handleDateClick(date) {
+      hideError();
+
+      if (!formData.start_date || (formData.start_date && formData.end_date)) {
+        formData.start_date = date;
+        formData.end_date = null;
+      } else {
+        if (date < formData.start_date) {
+          formData.end_date = formData.start_date;
+          formData.start_date = date;
+        } else if (date.getTime() === formData.start_date.getTime()) {
+          formData.end_date = date;
+        } else {
+          formData.end_date = date;
+        }
+
+        // Check if any date in range is booked
+        if (formData.start_date && formData.end_date) {
+          for (let d = new Date(formData.start_date); d <= formData.end_date; d.setDate(d.getDate() + 1)) {
+            if (isDateBooked(d)) {
+              alert('Some dates in your selection are not available. Please choose different dates.');
+              formData.start_date = null;
+              formData.end_date = null;
+              break;
+            }
+          }
+        }
+      }
+
+      renderCalendar();
+    }
+
+    function updateSelectedDatesDisplay() {
+      const container = document.getElementById('selectedDates');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (formData.start_date) {
+        const formatDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        let text = formatDate(formData.start_date);
+        if (formData.end_date && formData.end_date.getTime() !== formData.start_date.getTime()) {
+          text += ` → ${formatDate(formData.end_date)}`;
+        }
+
+        const chip = document.createElement('span');
+        chip.className = 'date-chip';
+        chip.innerHTML = `${text} <button type="button" class="date-chip-remove" onclick="clearDates()">×</button>`;
+        container.appendChild(chip);
+      }
+    }
+
+    function clearDates() {
+      formData.start_date = null;
+      formData.end_date = null;
+      renderCalendar();
+    }
+
+    function updateProgress() {
+      const progress = ((currentStep + 1) / totalSteps) * 100;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+      stepCounter.textContent = `${currentStep + 1} / ${totalSteps}`;
+    }
+
+    function hideError() {
+      const err = document.getElementById('stepError');
+      if (err) err.classList.remove('show');
+    }
+
+    function showStepError(msg) {
+      const err = document.getElementById('stepError');
+      if (err) {
+        err.textContent = msg;
+        err.classList.add('show');
+      }
+    }
+
+    function validateCurrentStep() {
+      const step = steps[currentStep];
+      hideError();
+
+      switch (step.type) {
+        case 'vehicle':
+          if (!formData.vehicle_id) {
+            showStepError('Please select a vehicle');
+            return false;
+          }
+          return true;
+
+        case 'dates':
+          if (!formData.start_date) {
+            showStepError('Please select your rental date(s)');
+            return false;
+          }
+          return true;
+
+        case 'age':
+          const age = parseInt(document.getElementById('ageInput')?.value);
+          const minAge = config.minimum_age || 21;
+          if (!age || age < minAge) {
+            showStepError(`Must be ${minAge} or older to rent`);
+            return false;
+          }
+          formData.age = age;
+          return true;
+
+        case 'phone':
+          const phone = document.getElementById('phoneInput')?.value.replace(/\D/g, '');
+          if (!phone || phone.length !== 10) {
+            showStepError('Please enter a valid phone number');
+            return false;
+          }
+          formData.phone = phone;
+          return true;
+
+        case 'email':
+          const email = document.getElementById('emailInput')?.value.trim();
+          const emailRequired = config.require_email || step.required;
+          if (emailRequired && !email) {
+            showStepError('Please enter your email');
+            return false;
+          }
+          if (email && !email.includes('@')) {
+            showStepError('Please enter a valid email');
+            return false;
+          }
+          formData.email = email || null;
+          return true;
+
+        case 'name':
+          const name = document.getElementById('nameInput')?.value.trim();
+          if (!name) {
+            showStepError('Please enter your name');
+            return false;
+          }
+          formData.name = name;
+          return true;
+      }
+
+      return true;
+    }
+
+    function nextStep() {
+      if (!validateCurrentStep()) return;
+
+      if (currentStep < steps.length - 1) {
+        currentStep++;
+        renderCurrentStep();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 0) {
+        currentStep--;
+        renderCurrentStep();
+      }
+    }
+
+    function getSelectedDatesText() {
+      if (!formData.start_date) return '';
+      const formatDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (formData.end_date && formData.end_date.getTime() !== formData.start_date.getTime()) {
+        return `${formatDate(formData.start_date)} - ${formatDate(formData.end_date)}`;
+      }
+      return formatDate(formData.start_date);
+    }
+
+    async function submitSurvey() {
+      if (!validateCurrentStep()) return;
+
+      const slug = getSlugFromPath();
+      const submitBtn = document.getElementById('nextBtn');
+
+      const payload = {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        vehicle_interest: formData.vehicle_name,
+        vehicle_id: formData.vehicle_id,
+        notes: `Dates: ${getSelectedDatesText()}${formData.age ? `, Age: ${formData.age}` : ''}`,
+        source: `rentalcapture.xyz/${slug}`
+      };
+
+      // Remove null/undefined values
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === null || payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
+      console.log('Submitting:', payload);
+
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/leads/capture`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+        console.log('Response:', response.status, data);
+
+        if (!response.ok) {
+          throw new Error(data.error || data.message || 'Failed to submit');
+        }
+
+        // Show success
+        surveyHeader.classList.remove('active');
+        progressBar.classList.remove('active');
+        stepCounter.classList.remove('active');
+        questionContainer.classList.remove('active');
+        successScreen.classList.add('active');
+      } catch (error) {
+        console.error('Submit error:', error);
+        alert(error.message || 'Something went wrong. Please try again.');
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
