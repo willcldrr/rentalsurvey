@@ -731,11 +731,11 @@
   <script>
     // ============ CONFIGURATION ============
     const API_BASE = 'https://scalexotics.com';
-    const API_KEY = 'sk_QIkla1NJu1kx4xF0W6wfoe6IW690KzqI';
     // =======================================
 
     // State
     let config = null;
+    let apiKey = null; // Will be loaded from config response
     let vehicles = [];
     let bookedDates = new Set();
     let currentStep = 0;
@@ -776,21 +776,23 @@
       }
 
       try {
-        const response = await fetch(`${API_BASE}/api/survey-config/${slug}`, {
-          headers: { 'X-API-Key': API_KEY }
-        });
+        const response = await fetch(`${API_BASE}/api/survey-config/${slug}`);
 
         if (!response.ok) {
           throw new Error('Survey not found');
         }
 
         const data = await response.json();
-        config = data.config;
-        vehicles = data.vehicles || [];
+
+        // The API returns the config directly or nested - handle both
+        config = data.config || data;
+        vehicles = data.vehicles || config.vehicles || [];
+        apiKey = data.api_key || config.api_key;
 
         // Process availability
-        if (data.availability) {
-          data.availability.forEach(booking => {
+        const availability = data.availability || config.availability;
+        if (availability) {
+          availability.forEach(booking => {
             const start = new Date(booking.start_date);
             const end = new Date(booking.end_date);
             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -867,35 +869,42 @@
 
     function buildSteps() {
       steps = [];
-      const fields = config.fields || {};
 
       // Vehicle selection (if enabled and vehicles exist)
-      if (fields.vehicle && vehicles.length > 0) {
+      // Support both config.collect_vehicle and config.fields.vehicle patterns
+      const collectVehicle = config.collect_vehicle ?? config.fields?.vehicle ?? true;
+      const collectDates = config.collect_dates ?? config.fields?.dates ?? true;
+      const collectAge = config.collect_age ?? config.fields?.age ?? false;
+      const collectPhone = config.collect_phone ?? config.fields?.phone ?? true;
+      const collectEmail = config.collect_email ?? config.fields?.email ?? false;
+      const collectName = config.collect_name ?? config.fields?.name ?? true;
+
+      if (collectVehicle && vehicles.length > 0) {
         steps.push({ type: 'vehicle', label: config.welcome_title || 'Which car interests you?' });
       }
 
       // Dates
-      if (fields.dates) {
+      if (collectDates) {
         steps.push({ type: 'dates', label: 'When do you need it?' });
       }
 
       // Age
-      if (fields.age) {
+      if (collectAge) {
         steps.push({ type: 'age', label: 'How old are you?' });
       }
 
       // Phone
-      if (fields.phone) {
+      if (collectPhone) {
         steps.push({ type: 'phone', label: 'Your phone number?' });
       }
 
       // Email
-      if (fields.email) {
+      if (collectEmail) {
         steps.push({ type: 'email', label: 'Your email address?', required: config.require_email });
       }
 
       // Name
-      if (fields.name) {
+      if (collectName) {
         steps.push({ type: 'name', label: "What's your name?" });
       }
 
@@ -1354,9 +1363,8 @@
         phone: formData.phone,
         email: formData.email,
         vehicle_interest: formData.vehicle_name,
-        vehicle_id: formData.vehicle_id,
         notes: `Dates: ${getSelectedDatesText()}${formData.age ? `, Age: ${formData.age}` : ''}`,
-        source: `rentalcapture.xyz/${slug}`
+        source: 'rentalcapture.xyz'
       };
 
       // Remove null/undefined values
@@ -1372,12 +1380,16 @@
       submitBtn.disabled = true;
 
       try {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (apiKey) {
+          headers['X-API-Key'] = apiKey;
+        }
+
         const response = await fetch(`${API_BASE}/api/leads/capture`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': API_KEY
-          },
+          headers,
           body: JSON.stringify(payload)
         });
 
